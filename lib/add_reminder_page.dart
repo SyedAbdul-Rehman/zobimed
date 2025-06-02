@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:zobimed/models/reminder.dart'; // Import Reminder model
 
 class AddReminderPage extends StatefulWidget {
-  final Function(Reminder) onSave;
+  final Function(Reminder) onSave; // For adding new reminders
+  final Reminder? existingReminder;
+  final int? reminderIndex;
+  final Function(int, Reminder)? onUpdate; // For updating existing reminders
 
-  const AddReminderPage({super.key, required this.onSave});
+  const AddReminderPage({
+    super.key,
+    required this.onSave,
+    this.existingReminder,
+    this.reminderIndex,
+    this.onUpdate,
+  });
 
   @override
   State<AddReminderPage> createState() => _AddReminderPageState();
@@ -20,6 +29,14 @@ class _AddReminderPageState extends State<AddReminderPage> {
   void initState() {
     super.initState();
     _medicineNameController.addListener(_validateForm);
+
+    if (widget.existingReminder != null) {
+      _medicineNameController.text = widget.existingReminder!.medicineName;
+      _selectedTime = widget.existingReminder!.reminderTime;
+      _selectedAlarmSound = widget.existingReminder!.alarmSound;
+      // Ensure button state is correct after pre-filling
+      _validateForm();
+    }
   }
 
   @override
@@ -30,7 +47,8 @@ class _AddReminderPageState extends State<AddReminderPage> {
 
   void _validateForm() {
     setState(() {
-      _isSaveButtonEnabled = _medicineNameController.text.isNotEmpty && _selectedTime != null;
+      _isSaveButtonEnabled =
+          _medicineNameController.text.isNotEmpty && _selectedTime != null;
     });
   }
 
@@ -47,14 +65,23 @@ class _AddReminderPageState extends State<AddReminderPage> {
     }
   }
 
-  void _saveReminder() {
+  void _submitReminder() {
     if (_isSaveButtonEnabled) {
-      final newReminder = Reminder(
+      final reminderData = Reminder(
         medicineName: _medicineNameController.text,
         reminderTime: _selectedTime!,
         alarmSound: _selectedAlarmSound,
       );
-      widget.onSave(newReminder);
+
+      if (widget.existingReminder != null &&
+          widget.onUpdate != null &&
+          widget.reminderIndex != null) {
+        // Editing existing reminder
+        widget.onUpdate!(widget.reminderIndex!, reminderData);
+      } else {
+        // Adding new reminder
+        widget.onSave(reminderData);
+      }
       Navigator.pop(context); // Go back to HomePage
     }
   }
@@ -71,9 +98,9 @@ class _AddReminderPageState extends State<AddReminderPage> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Add Reminder',
-          style: TextStyle(
+        title: Text(
+          widget.existingReminder == null ? 'Add Reminder' : 'Edit Reminder',
+          style: const TextStyle(
             color: Colors.black87,
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -88,7 +115,7 @@ class _AddReminderPageState extends State<AddReminderPage> {
             end: Alignment.bottomRight,
             colors: [
               Color(0xFFE3F2FD), // Light Blue
-              Colors.white,      // White
+              Colors.white, // White
             ],
           ),
         ),
@@ -126,7 +153,8 @@ class _AddReminderPageState extends State<AddReminderPage> {
                           ),
                           filled: true,
                           fillColor: Colors.grey.shade100,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -149,14 +177,16 @@ class _AddReminderPageState extends State<AddReminderPage> {
                               hintText: _selectedTime == null
                                   ? '--:-- --'
                                   : _selectedTime!.format(context),
-                              prefixIcon: Icon(Icons.access_time, color: Colors.blue.shade700),
+                              prefixIcon: Icon(Icons.access_time,
+                                  color: Colors.blue.shade700),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10.0),
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade100,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
                           ),
                         ),
@@ -181,14 +211,18 @@ class _AddReminderPageState extends State<AddReminderPage> {
                           ),
                           filled: true,
                           fillColor: Colors.grey.shade100,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          prefixIcon: Icon(Icons.volume_up, color: Colors.blue.shade700),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          prefixIcon: Icon(Icons.volume_up,
+                              color: Colors.blue.shade700),
                         ),
                         value: _selectedAlarmSound,
                         items: const [
                           DropdownMenuItem(value: 'Bell', child: Text('Bell')),
-                          DropdownMenuItem(value: 'Chime', child: Text('Chime')),
-                          DropdownMenuItem(value: 'Alarm', child: Text('Alarm')),
+                          DropdownMenuItem(
+                              value: 'Chime', child: Text('Chime')),
+                          DropdownMenuItem(
+                              value: 'Alarm', child: Text('Alarm')),
                         ],
                         onChanged: (String? newValue) {
                           setState(() {
@@ -207,19 +241,31 @@ class _AddReminderPageState extends State<AddReminderPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: _isSaveButtonEnabled
-                        ? [const Color(0xFF2196F3), const Color(0xFF00BCD4)] // Blue to Teal
-                        : [Colors.grey.shade400, Colors.grey.shade600], // Grey when disabled
+                        ? [
+                            const Color(0xFF2196F3),
+                            const Color(0xFF00BCD4)
+                          ] // Blue to Teal
+                        : [
+                            Colors.grey.shade400,
+                            Colors.grey.shade600
+                          ], // Grey when disabled
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
                   borderRadius: BorderRadius.circular(30.0),
                 ),
                 child: ElevatedButton.icon(
-                  onPressed: _isSaveButtonEnabled ? _saveReminder : null,
-                  icon: const Icon(Icons.save, color: Colors.white),
-                  label: const Text(
-                    'Save Reminder',
-                    style: TextStyle(
+                  onPressed: _isSaveButtonEnabled ? _submitReminder : null,
+                  icon: Icon(
+                      widget.existingReminder == null
+                          ? Icons.save
+                          : Icons.check,
+                      color: Colors.white),
+                  label: Text(
+                    widget.existingReminder == null
+                        ? 'Save Reminder'
+                        : 'Update Reminder',
+                    style: const TextStyle(
                       fontSize: 18,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

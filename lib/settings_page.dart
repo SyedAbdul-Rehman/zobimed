@@ -32,7 +32,7 @@ class SettingsPage extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               Color(0xFFE3F2FD), // Light Blue
-              Colors.white,      // White
+              Colors.white, // White
             ],
           ),
         ),
@@ -73,11 +73,13 @@ class SettingsPage extends StatelessWidget {
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade100,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
                             value: 'Bell',
                             items: const [
-                              DropdownMenuItem(value: 'Bell', child: Text('Bell')),
+                              DropdownMenuItem(
+                                  value: 'Bell', child: Text('Bell')),
                               // Add more options here if needed
                             ],
                             onChanged: (String? newValue) {
@@ -183,12 +185,52 @@ class SettingsPage extends StatelessWidget {
                       alignment: Alignment.center,
                       child: ElevatedButton(
                         onPressed: () {
-                          // No functionality yet
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext dialogContext) {
+                              return AlertDialog(
+                                title: const Text('Clear All Reminders?'),
+                                content: const Text(
+                                    'This will permanently delete all your medicine reminders. Are you sure?'),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15.0)),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('Cancel'),
+                                    onPressed: () {
+                                      Navigator.of(dialogContext)
+                                          .pop(); // Close the dialog
+                                    },
+                                  ),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.delete_forever,
+                                        color: Colors.white),
+                                    label: const Text('Delete All',
+                                        style: TextStyle(color: Colors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade700,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10.0),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(dialogContext)
+                                          .pop(); // Close the dialog
+                                      Navigator.pop(context,
+                                          true); // Pop SettingsPage and return true
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red.shade700,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10.0),
                           ),
