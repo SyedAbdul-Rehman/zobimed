@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:zobimed/settings_page.dart';
 import 'package:zobimed/add_reminder_page.dart';
 import 'package:zobimed/models/reminder.dart'; // Import the Reminder model
+import 'dart:convert'; // For jsonEncode and jsonDecode
+import 'package:shared_preferences/shared_preferences.dart'; // For local storage
 
 void main() {
   runApp(const MyApp());
@@ -33,23 +35,55 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<Reminder> _reminders = [];
+  static const String _remindersStorageKey =
+      'zobimed_reminders_v1'; // Added a version for potential future migrations
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReminders();
+  }
+
+  Future<void> _loadReminders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? remindersJson =
+        prefs.getStringList(_remindersStorageKey);
+    if (remindersJson != null) {
+      setState(() {
+        _reminders.clear(); // Clear existing in-memory reminders before loading
+        _reminders.addAll(remindersJson
+            .map((jsonString) => Reminder.fromJson(
+                jsonDecode(jsonString) as Map<String, dynamic>))
+            .toList());
+        _reminders
+            .sort((a, b) => _compareTimeOfDay(a.reminderTime, b.reminderTime));
+      });
+    }
+  }
+
+  Future<void> _saveReminders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> remindersJson =
+        _reminders.map((reminder) => jsonEncode(reminder.toJson())).toList();
+    await prefs.setStringList(_remindersStorageKey, remindersJson);
+  }
 
   void _addReminder(Reminder newReminder) {
     setState(() {
       _reminders.add(newReminder);
-      // Sort reminders by time (optional, but good for UX)
       _reminders
           .sort((a, b) => _compareTimeOfDay(a.reminderTime, b.reminderTime));
     });
+    _saveReminders();
   }
 
   void _updateReminder(int index, Reminder updatedReminder) {
     setState(() {
       _reminders[index] = updatedReminder;
-      // Sort reminders by time (optional, but good for UX)
       _reminders
           .sort((a, b) => _compareTimeOfDay(a.reminderTime, b.reminderTime));
     });
+    _saveReminders();
   }
 
   int _compareTimeOfDay(TimeOfDay a, TimeOfDay b) {
@@ -63,6 +97,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _reminders.clear();
     });
+    _saveReminders(); // Save the empty list
     // Optionally, show a SnackBar or Toast
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -99,6 +134,7 @@ class _HomePageState extends State<HomePage> {
                 setState(() {
                   _reminders.removeAt(index);
                 });
+                _saveReminders(); // Save after deleting
                 Navigator.of(alertContext).pop();
               },
             ),
