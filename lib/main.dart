@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zobimed/settings_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -56,11 +57,9 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.black54),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Settings icon pressed!'),
-                  duration: Duration(seconds: 1),
-                ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
             },
           ),
